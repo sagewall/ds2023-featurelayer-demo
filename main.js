@@ -37,6 +37,18 @@ const skyConditionsExpression = `
 
 const temperatureExpression = `Round($feature.TEMP) + '° F';`;
 
+const watchesAndWarningsEventExpression = `
+  var features = Intersects(FeatureSetByName($map,"Watches and Warnings"), $feature);
+  IIF(Count(features) > 0, First(features).Event, "No current watches or warnings");
+`;
+
+const watchesAndWarningsSummaryExpression = `
+  var features = Intersects(FeatureSetByName($map,"Watches and Warnings"), $feature);
+  IIF(Count(features) > 0, First(features).Summary, "");
+`;
+
+const windChillExpression = `Round($feature.WIND_CHILL) + '° F';`;
+
 const windSpeedExpression = `
   var deg = $feature.WIND_DIRECT;
   var speed = $feature.WIND_speed;
@@ -152,6 +164,54 @@ const windLabelClass = {
 };
 
 /**
+ * popup template
+ */
+
+const popupTemplate = {
+  content: `
+    <p>
+      At {OBS_DATETIME}, the wind direction is blowing from {WIND_DIRECT} degrees with a speed of {WIND_SPEED} km/h.
+      The temperature is {expression/temperature}. It currently feels like {expression/windchill}.
+    </p>
+    <p>
+      <strong>Sky Conditions: </strong>{SKY_CONDTN}
+    </p>
+    <p>
+      <strong>Visibility:</strong> {VISIBILITY} m
+    </p>
+    <p>
+      <strong>Watches and Warnings:</strong> {expression/watchesAndWarningsEvent}
+    </p>
+    <p>
+      {expression/watchesAndWarningsSummary}
+    </p>
+  `,
+  expressionInfos: [
+    {
+      expression: `Upper($feature.STATION_NAME)`,
+      name: "popupTitle"
+    },
+    {
+      expression: temperatureExpression,
+      name: "temperature"
+    },
+    {
+      expression: watchesAndWarningsEventExpression,
+      name: "watchesAndWarningsEvent"
+    },
+    {
+      expression: watchesAndWarningsSummaryExpression,
+      name: "watchesAndWarningsSummary"
+    },
+    {
+      expression: windChillExpression,
+      name: "windchill"
+    }
+  ],
+  title: `{expression/popupTitle}`
+};
+
+/**
  * renderer
  */
 
@@ -207,6 +267,7 @@ const renderer = {
 const weatherStations = new FeatureLayer({
   labelingInfo: [...skyConditionLabelClasses, ...temperatureLabelClasses, windLabelClass],
   layerId: 0,
+  popupTemplate,
   portalItem: {
     id: "cb1886ff0a9d4156ba4d2fadd7e8a139"
   },
@@ -216,10 +277,11 @@ const weatherStations = new FeatureLayer({
 const weatherWatchesAndWarnings = new FeatureLayer({
   title: "Watches and Warnings",
   layerId: 6,
+  popupEnabled: false,
   portalItem: {
     id: "a6134ae01aad44c499d12feec782b386"
   },
-  visible: false
+  visible: true
 });
 
 const map = new Map({
