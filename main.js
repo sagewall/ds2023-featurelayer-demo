@@ -28,6 +28,130 @@ const temperatureStops = [
 ];
 
 /**
+ * arcade expressions
+ */
+
+const skyConditionsExpression = `
+    IIf(Find( 'Clear', $feature.SKY_CONDTN ) >= 0, '\ue64e', '\ue679');
+  `;
+
+const temperatureExpression = `Round($feature.TEMP) + '° F';`;
+
+const windSpeedExpression = `
+  var deg = $feature.WIND_DIRECT;
+  var speed = $feature.WIND_speed;
+  var dir = When( speed == 0, "",
+    (deg < 22.5 && deg >= 0) || deg > 337.5, "N",
+    deg >= 22.5 && deg < 67.5, "NE",
+    deg >= 67.5 && deg < 112.5, "E",
+    deg >= 112.5 && deg < 157.5, "SE",
+    deg >= 157.5 && deg < 202.5, "S",
+    deg >= 202.5 && deg < 247.5, "SW",
+    deg >= 247.5 && deg < 292.5, "W",
+    deg >= 292.5 && deg < 337.5, "NW", "" );
+  return speed + " km/h " + dir;
+`;
+
+/**
+ * sky condition label classes
+ */
+
+const clearSkyConditionLabelClass = {
+  labelExpressionInfo: {
+    expression: skyConditionsExpression
+  },
+  labelPlacement: "above-left",
+  minScale: referenceScale,
+  symbol: {
+    type: "text",
+    color: "yellow",
+    font: {
+      family: "CalciteWebCoreIcons",
+      size: 14
+    },
+    haloColor: "gray",
+    haloSize: 1.5
+  },
+  where: `SKY_CONDTN LIKE '%Clear%'`
+};
+
+const cloudySkyConditionLabelClass = {
+  labelExpressionInfo: {
+    expression: skyConditionsExpression
+  },
+  labelPlacement: "above-left",
+  minScale: referenceScale,
+  symbol: {
+    type: "text",
+    color: "gray",
+    font: {
+      family: "CalciteWebCoreIcons",
+      size: 14
+    },
+    haloColor: "white",
+    haloSize: 1.5
+  },
+  where: `SKY_CONDTN NOT LIKE '%Clear%'`
+};
+
+const skyConditionLabelClasses = [clearSkyConditionLabelClass, cloudySkyConditionLabelClass];
+
+/**
+ * temperature label classes
+ */
+
+const temperatureLabelClasses = temperatureStops.map((stop, index) => {
+  let where = "";
+
+  index === 0
+    ? (where = `TEMP <= ${stop.value}`)
+    : (where = `TEMP > ${temperatureStops[index - 1].value} AND TEMP <= ${stop.value}`);
+
+  const labelClass = {
+    labelExpressionInfo: {
+      expression: temperatureExpression
+    },
+    labelPlacement: "above-right",
+    minScale: referenceScale,
+    symbol: {
+      type: "text",
+      font: {
+        size: 12,
+        weight: "bold"
+      },
+      color: stop.color,
+      haloColor: "black",
+      haloSize: 0.5
+    },
+    where
+  };
+
+  return labelClass;
+});
+
+/**
+ * wind speed label class
+ */
+
+const windLabelClass = {
+  labelExpressionInfo: {
+    expression: windSpeedExpression
+  },
+  labelPlacement: "below-center",
+  minScale: referenceScale,
+  symbol: {
+    type: "text",
+    font: {
+      size: 12,
+      weight: "bold"
+    },
+    color: "white",
+    haloColor: "black",
+    haloSize: 1
+  }
+};
+
+/**
  * renderer
  */
 
@@ -81,6 +205,7 @@ const renderer = {
  */
 
 const weatherStations = new FeatureLayer({
+  labelingInfo: [...skyConditionLabelClasses, ...temperatureLabelClasses, windLabelClass],
   layerId: 0,
   portalItem: {
     id: "cb1886ff0a9d4156ba4d2fadd7e8a139"
