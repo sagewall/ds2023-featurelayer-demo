@@ -1,7 +1,7 @@
 import "@arcgis/core/assets/esri/themes/light/main.css";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
 import Map from "@arcgis/core/Map.js";
-import MapView from "@arcgis/core/views/MapView.js";
+import SceneView from "@arcgis/core/views/SceneView.js";
 import Editor from "@arcgis/core/widgets/Editor.js";
 import Expand from "@arcgis/core/widgets/Expand.js";
 import LayerList from "@arcgis/core/widgets/LayerList.js";
@@ -9,7 +9,6 @@ import "@esri/calcite-components/dist/calcite/calcite.css";
 import "@esri/calcite-components/dist/components/calcite-button.js";
 import "@esri/calcite-components/dist/components/calcite-shell.js";
 import { setAssetPath } from "@esri/calcite-components/dist/components/index.js";
-import { arrowSymbol } from "./lib.js";
 import "./style.css";
 
 setAssetPath("https://js.arcgis.com/calcite-components/1.0.7/assets");
@@ -33,10 +32,6 @@ const temperatureStops = [
  * arcade expressions
  */
 
-const skyConditionsExpression = `
-    IIf(Find( 'Clear', $feature.SKY_CONDTN ) >= 0, '\ue64e', '\ue679');
-  `;
-
 const temperatureExpression = `Round($feature.TEMP) + '° F';`;
 
 const watchesAndWarningsEventExpression = `
@@ -51,9 +46,10 @@ const watchesAndWarningsSummaryExpression = `
 
 const windChillExpression = `Round($feature.WIND_CHILL) + '° F';`;
 
-const windSpeedExpression = `
+const windSpeedAndTemperatureExpression = `
   var deg = $feature.WIND_DIRECT;
   var speed = $feature.WIND_speed;
+  var temperature = Round($feature.TEMP) + '° F';
   var dir = When( speed == 0, "",
     (deg < 22.5 && deg >= 0) || deg > 337.5, "N",
     deg >= 22.5 && deg < 67.5, "NE",
@@ -63,105 +59,37 @@ const windSpeedExpression = `
     deg >= 202.5 && deg < 247.5, "SW",
     deg >= 247.5 && deg < 292.5, "W",
     deg >= 292.5 && deg < 337.5, "NW", "" );
-  return speed + " km/h " + dir;
+  return speed + " km/h " + dir + TextFormatting.NewLine + temperature;
 `;
 
 /**
- * sky condition label classes
+ * label classes
  */
 
-const clearSkyConditionLabelClass = {
+const labelClass = {
   labelExpressionInfo: {
-    expression: skyConditionsExpression
+    expression: windSpeedAndTemperatureExpression
   },
-  labelPlacement: "above-left",
+  labelPlacement: "above-center",
   minScale: referenceScale,
   symbol: {
-    type: "text",
-    color: "yellow",
-    font: {
-      family: "CalciteWebCoreIcons",
-      size: 14
-    },
-    haloColor: "gray",
-    haloSize: 1.5
-  },
-  where: `SKY_CONDTN LIKE '%Clear%'`
-};
-
-const cloudySkyConditionLabelClass = {
-  labelExpressionInfo: {
-    expression: skyConditionsExpression
-  },
-  labelPlacement: "above-left",
-  minScale: referenceScale,
-  symbol: {
-    type: "text",
-    color: "gray",
-    font: {
-      family: "CalciteWebCoreIcons",
-      size: 14
-    },
-    haloColor: "white",
-    haloSize: 1.5
-  },
-  where: `SKY_CONDTN NOT LIKE '%Clear%'`
-};
-
-const skyConditionLabelClasses = [clearSkyConditionLabelClass, cloudySkyConditionLabelClass];
-
-/**
- * temperature label classes
- */
-
-const temperatureLabelClasses = temperatureStops.map((stop, index) => {
-  let where = "";
-
-  index === 0
-    ? (where = `TEMP <= ${stop.value}`)
-    : (where = `TEMP > ${temperatureStops[index - 1].value} AND TEMP <= ${stop.value}`);
-
-  const labelClass = {
-    labelExpressionInfo: {
-      expression: temperatureExpression
-    },
-    labelPlacement: "above-right",
-    minScale: referenceScale,
-    symbol: {
-      type: "text",
-      font: {
-        size: 12,
-        weight: "bold"
-      },
-      color: stop.color,
-      haloColor: "black",
-      haloSize: 0.5
-    },
-    where
-  };
-
-  return labelClass;
-});
-
-/**
- * wind speed label class
- */
-
-const windLabelClass = {
-  labelExpressionInfo: {
-    expression: windSpeedExpression
-  },
-  labelPlacement: "below-center",
-  minScale: referenceScale,
-  symbol: {
-    type: "text",
-    font: {
-      size: 12,
-      weight: "bold"
-    },
-    color: "white",
-    haloColor: "black",
-    haloSize: 1
+    type: "label-3d",
+    symbolLayers: [
+      {
+        type: "text",
+        material: {
+          color: "white"
+        },
+        font: {
+          weight: "bold"
+        },
+        halo: {
+          color: "black",
+          size: 2
+        },
+        size: 24
+      }
+    ]
   }
 };
 
@@ -219,7 +147,29 @@ const popupTemplate = {
 
 const renderer = {
   type: "simple",
-  symbol: arrowSymbol,
+  symbol: {
+    type: "point-3d",
+    callout: {
+      type: "line",
+      color: "black",
+      size: 2
+    },
+    symbolLayers: [
+      {
+        type: "object",
+        resource: {
+          primitive: "cone"
+        },
+        anchor: "bottom",
+        tilt: 90
+      }
+    ],
+    verticalOffset: {
+      screenLength: 10,
+      maxWorldLength: 5000,
+      minWorldLength: 3000
+    }
+  },
   visualVariables: [
     {
       type: "color",
@@ -239,10 +189,10 @@ const renderer = {
         type: "size",
         valueExpression: "$view.scale",
         stops: [
-          { value: referenceScale * 32, size: 16 },
-          { value: referenceScale * 64, size: 12 },
-          { value: referenceScale * 128, size: 8 },
-          { value: referenceScale * 256, size: 4 }
+          { value: referenceScale * 32, size: 1600 },
+          { value: referenceScale * 64, size: 1200 },
+          { value: referenceScale * 128, size: 800 },
+          { value: referenceScale * 256, size: 400 }
         ]
       },
       maxDataValue: 100,
@@ -250,10 +200,10 @@ const renderer = {
         type: "size",
         valueExpression: "$view.scale",
         stops: [
-          { value: referenceScale * 32, size: 40 },
-          { value: referenceScale * 64, size: 30 },
-          { value: referenceScale * 128, size: 20 },
-          { value: referenceScale * 256, size: 10 }
+          { value: referenceScale * 32, size: 4000 },
+          { value: referenceScale * 64, size: 3000 },
+          { value: referenceScale * 128, size: 2000 },
+          { value: referenceScale * 256, size: 1000 }
         ]
       }
     }
@@ -267,7 +217,7 @@ const renderer = {
  */
 
 const weatherStations = new FeatureLayer({
-  labelingInfo: [...skyConditionLabelClasses, ...temperatureLabelClasses, windLabelClass],
+  labelingInfo: [labelClass],
   layerId: 0,
   popupTemplate,
   portalItem: {
@@ -291,11 +241,15 @@ const map = new Map({
   layers: [weatherWatchesAndWarnings, weatherStations]
 });
 
-const view = new MapView({
+const view = new SceneView({
   map,
-  center: {
-    latitude: 39.9,
-    longitude: -105
+  camera: {
+    position: {
+      latitude: 39.5,
+      longitude: -104.67,
+      z: 10000
+    },
+    tilt: 75
   },
   container: "viewDiv",
   zoom: 9
