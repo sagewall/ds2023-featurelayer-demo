@@ -7,9 +7,39 @@ import LayerList from "@arcgis/core/widgets/LayerList.js";
 import "@esri/calcite-components/dist/calcite/calcite.css";
 import "@esri/calcite-components/dist/components/calcite-shell.js";
 import { setAssetPath } from "@esri/calcite-components/dist/components/index.js";
+import { cloudSymbol, sunSymbol } from "./lib.js";
 import "./style.css";
 
 setAssetPath("https://js.arcgis.com/calcite-components/1.0.7/assets");
+
+/**
+ * arcade expressions
+ */
+
+const skyConditionsExpression = `
+    IIf(Find( 'Clear', $feature.SKY_CONDTN ) >= 0, 'sunny', 'cloudy');
+  `;
+
+/**
+ * renderer
+ */
+
+const renderer = {
+  type: "unique-value",
+  uniqueValueInfos: [
+    {
+      label: "Sunny",
+      symbol: sunSymbol,
+      value: "sunny"
+    },
+    {
+      label: "Cloudy",
+      symbol: cloudSymbol,
+      value: "cloudy"
+    }
+  ],
+  valueExpression: skyConditionsExpression
+};
 
 /**
  * feature layers
@@ -21,7 +51,8 @@ const weatherStations = new FeatureLayer({
   layerId: 0,
   portalItem: {
     id: "cb1886ff0a9d4156ba4d2fadd7e8a139"
-  }
+  },
+  renderer
 });
 
 const weatherWatchesAndWarnings = new FeatureLayer({
@@ -29,7 +60,8 @@ const weatherWatchesAndWarnings = new FeatureLayer({
   layerId: 6,
   portalItem: {
     id: "a6134ae01aad44c499d12feec782b386"
-  }
+  },
+  visible: false
 });
 
 const map = new Map({
