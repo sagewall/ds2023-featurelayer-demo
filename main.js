@@ -2,9 +2,11 @@ import "@arcgis/core/assets/esri/themes/light/main.css";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
 import Map from "@arcgis/core/Map.js";
 import MapView from "@arcgis/core/views/MapView.js";
+import Editor from "@arcgis/core/widgets/Editor.js";
 import Expand from "@arcgis/core/widgets/Expand.js";
 import LayerList from "@arcgis/core/widgets/LayerList.js";
 import "@esri/calcite-components/dist/calcite/calcite.css";
+import "@esri/calcite-components/dist/components/calcite-button.js";
 import "@esri/calcite-components/dist/components/calcite-shell.js";
 import { setAssetPath } from "@esri/calcite-components/dist/components/index.js";
 import { arrowSymbol } from "./lib.js";
@@ -266,10 +268,10 @@ const renderer = {
 
 const weatherStations = new FeatureLayer({
   labelingInfo: [...skyConditionLabelClasses, ...temperatureLabelClasses, windLabelClass],
-  layerId: 0,
+  layerId: 4,
   popupTemplate,
   portalItem: {
-    id: "cb1886ff0a9d4156ba4d2fadd7e8a139"
+    id: "ad89d792895e42fd88a53b5f11915b86"
   },
   renderer
 });
@@ -298,6 +300,53 @@ const view = new MapView({
   container: "viewDiv",
   zoom: 9
 });
+
+/**
+ * editor widget
+ */
+
+const layerInfos = [
+  {
+    layer: weatherStations,
+    formTemplate: {
+      elements: [
+        {
+          type: "field",
+          fieldName: "TEMP",
+          label: "Temperature ('° F')"
+        },
+        {
+          type: "field",
+          fieldName: "WIND_DIRECT",
+          label: "Wind Direction (degrees)"
+        },
+        {
+          type: "field",
+          fieldName: "WIND_SPEED",
+          label: "Wind Speed (k/hr)"
+        },
+        {
+          type: "field",
+          fieldName: "SKY_CONDTN",
+          label: "Sky Conditions"
+        }
+      ]
+    }
+  }
+];
+
+const editor = new Editor({
+  layerInfos,
+  view
+});
+
+const editorExpand = new Expand({
+  content: editor,
+  expandTooltip: "Editor Widget",
+  view
+});
+
+view.ui.add(editorExpand, "top-right");
 
 /**
  * layer list widget
