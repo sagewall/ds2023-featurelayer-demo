@@ -268,7 +268,7 @@ const renderer = {
 
 const weatherStations = new FeatureLayer({
   labelingInfo: [...skyConditionLabelClasses, ...temperatureLabelClasses, windLabelClass],
-  layerId: 4,
+  layerId: 0,
   popupTemplate,
   portalItem: {
     id: "ad89d792895e42fd88a53b5f11915b86"
