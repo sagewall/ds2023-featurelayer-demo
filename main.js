@@ -302,73 +302,79 @@ const view = new MapView({
 });
 
 /**
- * editor widget
+ * wait for the view to load and add widgets to the ui
  */
 
-const layerInfos = [
-  {
-    layer: weatherStations,
-    formTemplate: {
-      elements: [
-        {
-          type: "field",
-          fieldName: "TEMP",
-          label: "Temperature ('° F')"
-        },
-        {
-          type: "field",
-          fieldName: "WIND_DIRECT",
-          label: "Wind Direction (degrees)"
-        },
-        {
-          type: "field",
-          fieldName: "WIND_SPEED",
-          label: "Wind Speed (k/hr)"
-        },
-        {
-          type: "field",
-          fieldName: "SKY_CONDTN",
-          label: "Sky Conditions"
-        }
-      ]
+view.when(() => {
+  /**
+   * editor widget
+   */
+
+  const layerInfos = [
+    {
+      layer: weatherStations,
+      formTemplate: {
+        elements: [
+          {
+            type: "field",
+            fieldName: "TEMP",
+            label: "Temperature ('° F')"
+          },
+          {
+            type: "field",
+            fieldName: "WIND_DIRECT",
+            label: "Wind Direction (degrees)"
+          },
+          {
+            type: "field",
+            fieldName: "WIND_SPEED",
+            label: "Wind Speed (k/hr)"
+          },
+          {
+            type: "field",
+            fieldName: "SKY_CONDTN",
+            label: "Sky Conditions"
+          }
+        ]
+      }
     }
-  }
-];
+  ];
 
-const editor = new Editor({
-  layerInfos,
-  view
+  const editor = new Editor({
+    layerInfos,
+    view
+  });
+
+  const editorExpand = new Expand({
+    content: editor,
+    expandTooltip: "Editor Widget",
+    view
+  });
+
+  view.ui.add(editorExpand, "top-right");
+
+  /**
+   * layer list widget
+   */
+
+  const layerList = new LayerList({
+    listItemCreatedFunction: (event) => {
+      const item = event.item;
+      if (item.layer.type != "group") {
+        item.panel = {
+          content: "legend",
+          open: true
+        };
+      }
+    },
+    view
+  });
+
+  const layerListExpand = new Expand({
+    content: layerList,
+    expandTooltip: "Layer List",
+    view
+  });
+
+  view.ui.add(layerListExpand, "top-right");
 });
-
-const editorExpand = new Expand({
-  content: editor,
-  expandTooltip: "Editor Widget",
-  view
-});
-
-view.ui.add(editorExpand, "top-right");
-
-/**
- * layer list widget
- */
-
-const layerList = new LayerList({
-  view: view,
-  listItemCreatedFunction: (event) => {
-    const item = event.item;
-    if (item.layer.type != "group") {
-      item.panel = {
-        content: "legend",
-        open: true
-      };
-    }
-  }
-});
-
-const expand = new Expand({
-  content: layerList,
-  expandTooltip: "Layer List",
-  view
-});
-
-view.ui.add(expand, "top-right");
