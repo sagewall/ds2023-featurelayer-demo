@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Step 1</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css" />
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+    <script type="module">
+      import FeatureLayer from "https://js.arcgis.com/4.26/@arcgis/core/layers/FeatureLayer.js";
+      import Map from "https://js.arcgis.com/4.26/@arcgis/core/Map.js";
+      import MapView from "https://js.arcgis.com/4.26/@arcgis/core/views/MapView.js";
+      import Expand from "https://js.arcgis.com/4.26/@arcgis/core/widgets/Expand.js";
+      import LayerList from "https://js.arcgis.com/4.26/@arcgis/core/widgets/LayerList.js";
+
+      /**
+       * feature layers
+       * map
+       * map view
+       */
+
+      const weatherStations = new FeatureLayer({
+        layerId: 0,
+        portalItem: {
+          id: "cb1886ff0a9d4156ba4d2fadd7e8a139"
+        }
+      });
+
+      const weatherWatchesAndWarnings = new FeatureLayer({
+        title: "Watches and Warnings",
+        layerId: 6,
+        portalItem: {
+          id: "a6134ae01aad44c499d12feec782b386"
+        }
+      });
+
+      const map = new Map({
+        basemap: "streets-navigation-vector",
+        layers: [weatherWatchesAndWarnings, weatherStations]
+      });
+
+      const view = new MapView({
+        map,
+        center: {
+          latitude: 39.9,
+          longitude: -105
+        },
+        container: "viewDiv",
+        zoom: 9
+      });
+
+      /**
+       * wait for the view to load and add widgets to the ui
+       */
+
+      view.when(() => {
+        /**
+         * layer list widget
+         */
+
+        const layerList = new LayerList({
+          listItemCreatedFunction: (event) => {
+            const item = event.item;
+            if (item.layer.type != "group") {
+              item.panel = {
+                content: "legend",
+                open: true
+              };
+            }
+          },
+          view
+        });
+
+        const layerListExpand = new Expand({
+          content: layerList,
+          expandTooltip: "Layer List",
+          view
+        });
+
+        view.ui.add(layerListExpand, "top-right");
+      });
+    </script>
+  </head>
+  <body>
+    <div id="viewDiv" />
+  </body>
+</html>
