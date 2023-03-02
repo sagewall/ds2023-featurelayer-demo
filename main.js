@@ -317,23 +317,19 @@ view.when(() => {
         elements: [
           {
             type: "field",
-            fieldName: "TEMP",
-            label: "Temperature ('° F')"
+            fieldName: "TEMP"
           },
           {
             type: "field",
-            fieldName: "WIND_DIRECT",
-            label: "Wind Direction (degrees)"
+            fieldName: "WIND_DIRECT"
           },
           {
             type: "field",
-            fieldName: "WIND_SPEED",
-            label: "Wind Speed (k/hr)"
+            fieldName: "WIND_SPEED"
           },
           {
             type: "field",
-            fieldName: "SKY_CONDTN",
-            label: "Sky Conditions"
+            fieldName: "SKY_CONDTN"
           }
         ]
       }
